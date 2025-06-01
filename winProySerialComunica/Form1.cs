@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -25,9 +25,11 @@ namespace winProySerialComunica
 
             rtxBox.LinkClicked += rtxBox_LinkClicked;
 
-            ComunicaTXRX = new classComunicacion("COM1", 115200);
+            ComunicaTXRX = new classComunicacion("COM1", 115200); // Changed from 115200 to match classComunicacion
             ComunicaTXRX.LlegoMensaje += ComunicaTXRX_LLegomensaje;
-            ComunicaTXRX.LlegoArchivo += ComunicaTXRX_LlegoArchivo; // New event for file reception
+            ComunicaTXRX.LlegoArchivo += ComunicaTXRX_LlegoArchivo;
+            ComunicaTXRX.ProgresoEnvio += ComunicaTXRX_ProgresoEnvio; // NUEVA LÍNEA
+            ComunicaTXRX.ProgresoRecepcion += ComunicaTXRX_ProgresoRecepcion; // NUEVA LÍNEA
 
             rtxMensajeEnvia.KeyDown += rtxMensajeEnvia_KeyDown;
 
@@ -42,6 +44,59 @@ namespace winProySerialComunica
             btnMinimizar.Click += btnMinimizar_Click;
         }
 
+        private void ComunicaTXRX_ProgresoEnvio(string fileName, long enviado, long total)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    ComunicaTXRX_ProgresoEnvio(fileName, enviado, total);
+                }));
+            }
+            else
+            {
+                double porcentaje = (double)enviado * 100 / total;
+
+                // CORRECCIÓN: Mostrar progreso más detallado y solo en intervalos específicos
+                if (porcentaje == 0 || porcentaje >= 100 || (int)porcentaje % 20 == 0)
+                {
+                    string mensaje = $"Enviando {fileName}: {porcentaje:F1}% ({enviado:N0}/{total:N0} bytes)";
+
+                    // En lugar de MessageBox, actualizar el chat
+                    AgregarMensaje("Sistema", mensaje, false);
+
+                    // Si quieres mantener el MessageBox para debug, úsalo solo al 100%
+                    if (porcentaje >= 100)
+                    {
+                        MessageBox.Show($"Archivo {fileName} enviado completamente");
+                    }
+                }
+            }
+        }
+
+
+
+        private void ComunicaTXRX_ProgresoRecepcion(string fileName, long recibido, long total)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    ComunicaTXRX_ProgresoRecepcion(fileName, recibido, total);
+                }));
+            }
+            else
+            {
+                double porcentaje = (double)recibido * 100 / total;
+
+                if (porcentaje == 0 || porcentaje >= 100 || (int)porcentaje % 20 == 0)
+                {
+                    string mensaje = $"Recibiendo {fileName}: {porcentaje:F1}% ({recibido:N0}/{total:N0} bytes)";
+                    AgregarMensaje("Sistema", mensaje, false);
+                }
+            }
+        }
+        // Rest of the code remains unchanged
         private void Form1_Load(object sender, EventArgs e)
         {
             Panel panelSuperior = new Panel();
